@@ -9,10 +9,14 @@ import {
   createUserWithEmailAndPassword, 
   fbSignOut, 
   fbSendResetEmail,
+  fbSendEmailVerification,
+  fbUpdateProfile,
+  fbUpdatePassword,
   onAuthStateChanged,
   doc,
   getDoc,
-  setDoc
+  setDoc,
+  updateDoc
 } from '../services/firebase';
 
 const AuthContext = createContext();
@@ -35,14 +39,16 @@ export const AuthProvider = ({ children }) => {
         name: 'Administrador Demo',
         email: 'admin@tienda.com',
         password: 'admin123password',
-        role: 'Administrador'
+        role: 'Administrador',
+        shippingAddress: 'Centro de Operaciones 0x1 Tech, CDMX'
       },
       {
         id: 'usr-cliente',
         name: 'Cliente Demo',
         email: 'cliente@tienda.com',
         password: 'cliente123password',
-        role: 'Cliente'
+        role: 'Cliente',
+        shippingAddress: 'Av. Insurgentes Sur 1450, Benito Juárez, CDMX'
       }
     ];
     localStorage.setItem(STORAGE_KEY_ALL_USERS, JSON.stringify(defaults));
@@ -57,28 +63,30 @@ export const AuthProvider = ({ children }) => {
       if (firebaseUser) {
         let userRole = 'Cliente';
         let userName = firebaseUser.displayName || firebaseUser.email.split('@')[0];
+        let shippingAddress = '';
 
-        // Consultar Firestore si existe documento de perfil para obtener rol
         if (db) {
           try {
             const userDocRef = doc(db, 'users', firebaseUser.uid);
             const userSnap = await getDoc(userDocRef);
             if (userSnap.exists()) {
               const data = userSnap.data();
-              userRole = data.role || 'Cliente';
+              userRole = data.role === 'Administrador' ? 'Administrador' : 'Cliente';
               userName = data.name || userName;
+              shippingAddress = data.shippingAddress || '';
             } else {
-              // Guardar en Firestore si es nuevo usuario
+              // Registro nuevo en Firestore
               await setDoc(userDocRef, {
                 uid: firebaseUser.uid,
                 email: firebaseUser.email,
                 name: userName,
-                role: userRole,
+                role: 'Cliente', // Seguridad: por defecto nadie se autoasigna Admin
+                shippingAddress: '',
                 createdAt: new Date().toISOString()
               });
             }
           } catch (e) {
-            console.warn('Error leyendo rol de Firestore:', e);
+            console.warn('Error leyendo perfil de Firestore:', e);
           }
         }
 
@@ -87,6 +95,8 @@ export const AuthProvider = ({ children }) => {
           name: userName,
           email: firebaseUser.email,
           role: userRole,
+          shippingAddress,
+          emailVerified: firebaseUser.emailVerified,
           photoURL: firebaseUser.photoURL
         };
 
@@ -109,26 +119,52 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem(STORAGE_KEY_ALL_USERS, JSON.stringify(users));
   }, [users]);
 
-  // Registro con Email/Password (Firebase o Local Fallback)
+  // Registro de clientes con validación de nombre y apellido obligatorio [BUG-AUTH-02] y rol cliente forzado [BUG-AUTH-01]
   const register = async ({ name, email, password, role = 'Cliente' }) => {
+    const cleanName = name.trim();
     const cleanEmail = email.trim().toLowerCase();
+
+    // Validación: al menos dos palabras separadas por espacio (Nombre y Apellido)
+    const nameWords = cleanName.split(/\s+/).filter(Boolean);
+    if (nameWords.length < 2) {
+      throw new Error('Por favor ingresa tu nombre y al menos un apellido (ej. Juan Pérez).');
+    }
+
+    // Seguridad: en registro público el rol siempre es 'Cliente' para evitar escalación de privilegios
+    const assignedRole = 'Cliente';
 
     if (isFirebaseConfigured && auth) {
       try {
         const userCred = await createUserWithEmailAndPassword(auth, cleanEmail, password);
+        
+        // Actualizar displayName en Firebase Auth
+        try {
+          await fbUpdateProfile(userCred.user, { displayName: cleanName });
+        } catch (_) {}
+
+        // Enviar verificación de correo [BUG-AUTH-03]
+        try {
+          await fbSendEmailVerification(userCred.user);
+        } catch (verifErr) {
+          console.warn('No se pudo despachar correo de verificación automático:', verifErr);
+        }
+
         const appUser = {
           id: userCred.user.uid,
-          name: name || cleanEmail.split('@')[0],
+          name: cleanName,
           email: cleanEmail,
-          role
+          role: assignedRole,
+          shippingAddress: '',
+          emailVerified: false
         };
 
         if (db) {
           await setDoc(doc(db, 'users', userCred.user.uid), {
             uid: userCred.user.uid,
-            name: appUser.name,
+            name: cleanName,
             email: cleanEmail,
-            role,
+            role: assignedRole,
+            shippingAddress: '',
             createdAt: new Date().toISOString()
           });
         }
@@ -137,16 +173,16 @@ export const AuthProvider = ({ children }) => {
         return appUser;
       } catch (err) {
         if (err.code === 'auth/email-already-in-use') {
-          throw new Error('El correo electrónico ya se encuentra registrado en Firebase.');
+          throw new Error('El correo electrónico ya se encuentra registrado.');
         } else if (err.code === 'auth/weak-password') {
           throw new Error('La contraseña debe tener al menos 6 caracteres.');
         } else {
-          throw new Error(err.message || 'Error al registrarse en Firebase.');
+          throw new Error(err.message || 'Error al registrarse en el sistema.');
         }
       }
     }
 
-    // Modo local
+    // Modo local / Fallback
     const exists = users.find(u => u.email.toLowerCase() === cleanEmail);
     if (exists) {
       throw new Error('El correo electrónico ya está registrado.');
@@ -154,10 +190,11 @@ export const AuthProvider = ({ children }) => {
 
     const newUser = {
       id: 'usr-' + Date.now(),
-      name,
+      name: cleanName,
       email: cleanEmail,
       password,
-      role
+      role: assignedRole,
+      shippingAddress: ''
     };
 
     setUsers(prev => [...prev, newUser]);
@@ -174,13 +211,16 @@ export const AuthProvider = ({ children }) => {
         const userCred = await signInWithEmailAndPassword(auth, cleanEmail, password);
         let userRole = 'Cliente';
         let userName = userCred.user.displayName || cleanEmail.split('@')[0];
+        let shippingAddress = '';
 
         if (db) {
           try {
             const userDoc = await getDoc(doc(db, 'users', userCred.user.uid));
             if (userDoc.exists()) {
-              userRole = userDoc.data().role || 'Cliente';
-              userName = userDoc.data().name || userName;
+              const data = userDoc.data();
+              userRole = data.role === 'Administrador' ? 'Administrador' : 'Cliente';
+              userName = data.name || userName;
+              shippingAddress = data.shippingAddress || '';
             }
           } catch (e) {
             console.warn(e);
@@ -191,7 +231,9 @@ export const AuthProvider = ({ children }) => {
           id: userCred.user.uid,
           name: userName,
           email: cleanEmail,
-          role: userRole
+          role: userRole,
+          shippingAddress,
+          emailVerified: userCred.user.emailVerified
         };
         setCurrentUser(appUser);
         return appUser;
@@ -199,7 +241,10 @@ export const AuthProvider = ({ children }) => {
         if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
           throw new Error('Credenciales inválidas. Verifica tu correo y contraseña.');
         }
-        throw new Error(err.message || 'Error al iniciar sesión con Firebase.');
+        if (err.code === 'auth/too-many-requests') {
+          throw new Error('Demasiados intentos fallidos. Por tu seguridad, espera unos minutos e inténtalo de nuevo.');
+        }
+        throw new Error(err.message || 'Error al iniciar sesión.');
       }
     }
 
@@ -223,20 +268,24 @@ export const AuthProvider = ({ children }) => {
       const user = result.user;
       let userRole = 'Cliente';
       let userName = user.displayName || user.email.split('@')[0];
+      let shippingAddress = '';
 
       if (db) {
         try {
           const userDocRef = doc(db, 'users', user.uid);
           const snap = await getDoc(userDocRef);
           if (snap.exists()) {
-            userRole = snap.data().role || 'Cliente';
-            userName = snap.data().name || userName;
+            const data = snap.data();
+            userRole = data.role === 'Administrador' ? 'Administrador' : 'Cliente';
+            userName = data.name || userName;
+            shippingAddress = data.shippingAddress || '';
           } else {
             await setDoc(userDocRef, {
               uid: user.uid,
               name: userName,
               email: user.email,
               role: 'Cliente',
+              shippingAddress: '',
               photoURL: user.photoURL || '',
               createdAt: new Date().toISOString()
             });
@@ -251,14 +300,16 @@ export const AuthProvider = ({ children }) => {
         name: userName,
         email: user.email,
         role: userRole,
-        photoURL: user.photoURL
+        shippingAddress,
+        photoURL: user.photoURL,
+        emailVerified: user.emailVerified
       };
 
       setCurrentUser(appUser);
       return appUser;
     } catch (err) {
       if (err.code === 'auth/popup-closed-by-user') {
-        throw new Error('Ventana de acceso con Google cerrada antes de completar.');
+        throw new Error('Ventana de acceso con Google cancelada por el usuario.');
       }
       throw new Error(err.message || 'Error al autenticarse con Google.');
     }
@@ -276,7 +327,7 @@ export const AuthProvider = ({ children }) => {
     setCurrentUser(null);
   };
 
-  // Restablecimiento de contraseña
+  // Restablecimiento de contraseña con captura de [BUG-AUTH-04] Rate Limiting
   const sendPasswordReset = async (email) => {
     const cleanEmail = email.trim().toLowerCase();
 
@@ -286,13 +337,16 @@ export const AuthProvider = ({ children }) => {
         return {
           success: true,
           email: cleanEmail,
-          message: `Se ha enviado el enlace oficial de restablecimiento a ${cleanEmail} desde Firebase.`
+          message: `Se ha enviado el enlace oficial de restablecimiento a ${cleanEmail}. Revisa tu bandeja de entrada o spam.`
         };
       } catch (err) {
         if (err.code === 'auth/user-not-found') {
-          throw new Error('No existe una cuenta asociada a este correo electrónico en Firebase.');
+          throw new Error('No existe una cuenta asociada a este correo electrónico.');
         }
-        throw new Error(err.message || 'Error al enviar correo de recuperación.');
+        if (err.code === 'auth/too-many-requests') {
+          throw new Error('Has solicitado el restablecimiento demasiadas veces recientemente. Por favor espera unos minutos antes de intentar de nuevo.');
+        }
+        throw new Error(err.message || 'Error al enviar el correo de recuperación.');
       }
     }
 
@@ -336,6 +390,46 @@ export const AuthProvider = ({ children }) => {
     return true;
   };
 
+  // [GAP-01] Actualizar Perfil (Nombre, Dirección y Contraseña)
+  const updateProfile = async ({ name, shippingAddress, newPassword }) => {
+    if (!currentUser) throw new Error('No hay usuario autenticado.');
+    const cleanName = (name || '').trim();
+    const cleanAddress = (shippingAddress || '').trim();
+
+    if (cleanName) {
+      const words = cleanName.split(/\s+/).filter(Boolean);
+      if (words.length < 2) {
+        throw new Error('Ingresa al menos un nombre y un apellido.');
+      }
+    }
+
+    if (isFirebaseConfigured && auth && auth.currentUser) {
+      if (cleanName && cleanName !== currentUser.name) {
+        await fbUpdateProfile(auth.currentUser, { displayName: cleanName });
+      }
+      if (newPassword && newPassword.length >= 6) {
+        await fbUpdatePassword(auth.currentUser, newPassword);
+      }
+      if (db) {
+        await updateDoc(doc(db, 'users', currentUser.id), {
+          name: cleanName || currentUser.name,
+          shippingAddress: cleanAddress
+        });
+      }
+    }
+
+    // Actualizar estado local
+    const updatedUser = {
+      ...currentUser,
+      name: cleanName || currentUser.name,
+      shippingAddress: cleanAddress
+    };
+
+    setUsers(prev => prev.map(u => u.id === currentUser.id ? { ...u, ...updatedUser, ...(newPassword ? { password: newPassword } : {}) } : u));
+    setCurrentUser(updatedUser);
+    return updatedUser;
+  };
+
   const isAdmin = currentUser?.role === 'Administrador';
   const isClient = currentUser?.role === 'Cliente';
   const isAuthenticated = Boolean(currentUser);
@@ -352,6 +446,7 @@ export const AuthProvider = ({ children }) => {
       logout,
       sendPasswordReset,
       resetPasswordWithToken,
+      updateProfile,
       isFirebaseConfigured
     }}>
       {children}

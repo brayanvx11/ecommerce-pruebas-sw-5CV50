@@ -8,6 +8,9 @@ import {
   GoogleAuthProvider,
   signOut as fbSignOut, 
   sendPasswordResetEmail as fbSendResetEmail,
+  sendEmailVerification as fbSendEmailVerification,
+  updateProfile as fbUpdateProfile,
+  updatePassword as fbUpdatePassword,
   onAuthStateChanged 
 } from 'firebase/auth';
 import { 
@@ -51,6 +54,9 @@ export {
   GoogleAuthProvider,
   fbSignOut,
   fbSendResetEmail,
+  fbSendEmailVerification,
+  fbUpdateProfile,
+  fbUpdatePassword,
   onAuthStateChanged,
   collection,
   doc,

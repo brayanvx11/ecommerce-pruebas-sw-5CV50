@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, ShoppingCart, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 
-export const Carousel = ({ onSelectProduct }) => {
+export const Carousel = () => {
   const { products } = useStore();
+  const navigate = useNavigate();
   const featured = products.filter(p => p.isFeatured);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -33,17 +35,17 @@ export const Carousel = ({ onSelectProduct }) => {
         
         {/* Información del Producto */}
         <div style={{ padding: '3rem', zIndex: 10 }}>
-          <span style={{ display: 'inline-block', backgroundColor: '#2563eb', color: 'white', padding: '0.3rem 0.8rem', borderRadius: '9999px', fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '1rem', textTransform: 'uppercase' }}>
-            Destacado Especial
+          <span style={{ display: 'inline-block', backgroundColor: '#2563eb', color: 'white', padding: '0.3rem 0.8rem', borderRadius: '9999px', fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Destacado 0x1 Tech
           </span>
-          <h2 style={{ fontSize: '2.2rem', fontWeight: '800', lineHeight: 1.2, margin: '0 0 1rem 0' }}>
+          <h2 style={{ fontSize: '2.1rem', fontWeight: '800', lineHeight: 1.2, margin: '0 0 1rem 0' }}>
             {currentItem.name}
           </h2>
           <p style={{ color: '#cbd5e1', fontSize: '1rem', lineHeight: '1.6', marginBottom: '1.5rem', maxWidth: '480px' }}>
             {currentItem.description}
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '1.5rem' }}>
-            <span style={{ fontSize: '2rem', fontWeight: 'bold', color: '#60a5fa' }}>
+            <span style={{ fontSize: '2rem', fontWeight: 'bold', color: '#38bdf8' }}>
               ${currentItem.price.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN
             </span>
             <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>
@@ -52,7 +54,7 @@ export const Carousel = ({ onSelectProduct }) => {
           </div>
 
           <button 
-            onClick={() => onSelectProduct(currentItem)}
+            onClick={() => navigate(`/producto/${currentItem.id}`)}
             className="btn-primary" 
             style={{ fontSize: '1rem', padding: '0.75rem 1.5rem' }}
           >
@@ -95,7 +97,7 @@ export const Carousel = ({ onSelectProduct }) => {
         <ChevronRight size={24} />
       </button>
 
-      {/* Indicadores de bolitas */}
+      {/* Indicadores */}
       <div style={{ position: 'absolute', bottom: '1rem', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '0.5rem' }}>
         {featured.map((_, idx) => (
           <button 
@@ -105,7 +107,7 @@ export const Carousel = ({ onSelectProduct }) => {
               width: idx === currentIndex ? '24px' : '8px', 
               height: '8px', 
               borderRadius: '9999px', 
-              backgroundColor: idx === currentIndex ? '#60a5fa' : 'rgba(255,255,255,0.4)', 
+              backgroundColor: idx === currentIndex ? '#38bdf8' : 'rgba(255,255,255,0.4)', 
               border: 'none', 
               cursor: 'pointer',
               transition: 'all 0.3s'

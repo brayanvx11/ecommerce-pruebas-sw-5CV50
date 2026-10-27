@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { Home } from './pages/Home';
@@ -9,125 +10,52 @@ import { Checkout } from './pages/Checkout';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { AuthViews } from './pages/AuthViews';
 import { ReturnPolicy } from './pages/ReturnPolicy';
-import { ProductCard } from './components/ProductCard';
-import { useStore } from './context/StoreContext';
-import { useAuth } from './context/AuthContext';
-import { Heart } from 'lucide-react';
+import { Profile } from './pages/Profile';
+import { MyOrders } from './pages/MyOrders';
+import { Favorites } from './pages/Favorites';
+
+// Scroll to top on route change
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [pathname]);
+
+  return null;
+}
 
 export function App() {
-  const [currentView, setCurrentView] = useState('home'); // 'home' | 'catalog' | 'detail' | 'cart' | 'checkout' | 'admin' | 'login' | 'register' | 'returns' | 'favorites'
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  
-  const { products, userFavorites } = useStore();
-  const { isAuthenticated } = useAuth();
-
-  const handleSelectProduct = (product) => {
-    setSelectedProduct(product);
-    setCurrentView('detail');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const favoriteProducts = products.filter(p => userFavorites.includes(p.id));
-
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#f8fafc' }}>
+      <ScrollToTop />
       
-      {/* 1. Header / Navbar con enlaces, redes y autenticación */}
-      <Navbar currentView={currentView} setCurrentView={setCurrentView} />
+      {/* 1. Header / Navbar con buscador rápido, navegación de rutas y sesión */}
+      <Navbar />
 
-      {/* 2. Enrutamiento de vistas según estado */}
+      {/* 2. Enrutamiento declarativo vía React Router DOM */}
       <main style={{ flex: 1 }}>
-        {currentView === 'home' && (
-          <Home 
-            onSelectProduct={handleSelectProduct} 
-            onNavigate={(view) => { setCurrentView(view); window.scrollTo({ top: 0, behavior: 'smooth' }); }} 
-          />
-        )}
-
-        {currentView === 'catalog' && (
-          <Catalog onSelectProduct={handleSelectProduct} />
-        )}
-
-        {currentView === 'detail' && (
-          <ProductDetail 
-            product={selectedProduct} 
-            onBack={() => setCurrentView('catalog')}
-            onGoToCart={() => { setCurrentView('cart'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-            onRequireLogin={() => { setCurrentView('login'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-          />
-        )}
-
-        {currentView === 'cart' && (
-          <Cart 
-            onProceedToCheckout={() => { setCurrentView('checkout'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-            onContinueShopping={() => { setCurrentView('catalog'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-            onRequireLogin={() => { setCurrentView('login'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-          />
-        )}
-
-        {currentView === 'checkout' && (
-          <Checkout 
-            onBackToCart={() => setCurrentView('cart')}
-            onOrderCompleted={() => { setCurrentView('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-          />
-        )}
-
-        {currentView === 'admin' && (
-          <AdminDashboard />
-        )}
-
-        {currentView === 'login' && (
-          <AuthViews 
-            initialView="login" 
-            onNavigate={setCurrentView} 
-            onSuccess={() => setCurrentView('home')} 
-          />
-        )}
-
-        {currentView === 'register' && (
-          <AuthViews 
-            initialView="register" 
-            onNavigate={setCurrentView} 
-            onSuccess={() => setCurrentView('home')} 
-          />
-        )}
-
-        {currentView === 'returns' && (
-          <ReturnPolicy onNavigateToCatalog={() => setCurrentView('catalog')} />
-        )}
-
-        {currentView === 'favorites' && (
-          <div className="container" style={{ paddingTop: '2.5rem', paddingBottom: '3.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '2rem' }}>
-              <Heart size={26} color="#ef4444" fill="#ef4444" />
-              <h1 style={{ fontSize: '1.8rem', fontWeight: '800', color: '#0f172a', margin: 0 }}>
-                Mis Artículos Favoritos ({favoriteProducts.length})
-              </h1>
-            </div>
-
-            {favoriteProducts.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.75rem' }}>
-                {favoriteProducts.map(prod => (
-                  <ProductCard key={prod.id} product={prod} onSelectProduct={handleSelectProduct} />
-                ))}
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '4rem 1rem', backgroundColor: '#ffffff', borderRadius: '1rem', border: '1px solid #e2e8f0' }}>
-                <p style={{ color: '#64748b', fontSize: '1.1rem', margin: '0 0 1rem 0' }}>
-                  No tienes productos guardados en favoritos todavía.
-                </p>
-                <button onClick={() => setCurrentView('catalog')} className="btn-primary">
-                  Explorar Catálogo
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/catalogo" element={<Catalog />} />
+          <Route path="/producto/:id" element={<ProductDetail />} />
+          <Route path="/carrito" element={<Cart />} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/login" element={<AuthViews initialView="login" />} />
+          <Route path="/registro" element={<AuthViews initialView="register" />} />
+          <Route path="/perfil" element={<Profile />} />
+          <Route path="/mis-pedidos" element={<MyOrders />} />
+          <Route path="/favoritos" element={<Favorites />} />
+          <Route path="/devoluciones" element={<ReturnPolicy />} />
+          
+          {/* Fallback para cualquier ruta desconocida */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </main>
 
-      {/* 3. Footer con nombre de negocio, políticas y redes (Instagram, X, TikTok, WhatsApp) */}
-      <Footer setCurrentView={setCurrentView} />
-
+      {/* 3. Footer institucional con 0x1 Tech, redes sociales y políticas */}
+      <Footer />
     </div>
   );
 }

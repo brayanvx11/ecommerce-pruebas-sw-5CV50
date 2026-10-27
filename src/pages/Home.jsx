@@ -1,10 +1,11 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Carousel } from '../components/Carousel';
 import { ProductCard } from '../components/ProductCard';
 import { useStore } from '../context/StoreContext';
-import { Sparkles, TrendingUp, ShieldCheck, Truck, RefreshCw, ArrowRight } from 'lucide-react';
+import { TrendingUp, ShieldCheck, Truck, RefreshCw, ArrowRight } from 'lucide-react';
 
-export const Home = ({ onSelectProduct, onNavigate }) => {
+export const Home = () => {
   const { products } = useStore();
 
   // Sección de Recomendaciones: basada en lo que otros usuarios han comprado (mayor boughtCount)
@@ -13,13 +14,13 @@ export const Home = ({ onSelectProduct, onNavigate }) => {
     .slice(0, 4);
 
   // Novedades o catálogo destacado
-  const latestProducts = [...products].slice(0, 4);
+  const latestProducts = [...products].slice(0, 8);
 
   return (
     <div className="container" style={{ paddingTop: '2rem', paddingBottom: '3.5rem' }}>
       
-      {/* 1. Carrusel Principal */}
-      <Carousel onSelectProduct={onSelectProduct} />
+      {/* 1. Carrusel Principal de 0x1 Tech */}
+      <Carousel />
 
       {/* Beneficios de Compra */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem', marginBottom: '3.5rem' }}>
@@ -29,7 +30,7 @@ export const Home = ({ onSelectProduct, onNavigate }) => {
           </div>
           <div>
             <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 'bold', color: '#1e293b' }}>Envíos Seguros</h4>
-            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Seguimiento en tiempo real</span>
+            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Rastreo en vivo con 0x1 Tech</span>
           </div>
         </div>
 
@@ -39,7 +40,7 @@ export const Home = ({ onSelectProduct, onNavigate }) => {
           </div>
           <div>
             <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 'bold', color: '#1e293b' }}>Garantía Oficial</h4>
-            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>12 meses de cobertura</span>
+            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>12 meses de cobertura total</span>
           </div>
         </div>
 
@@ -66,17 +67,17 @@ export const Home = ({ onSelectProduct, onNavigate }) => {
                 Recomendaciones para ti
               </h2>
               <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
-                Basado en lo que otros usuarios han comprado recientemente
+                Basado en lo que otros usuarios han comprado recientemente en 0x1 Tech
               </span>
             </div>
           </div>
 
-          <button 
-            onClick={() => onNavigate('catalog')}
-            style={{ background: 'none', border: 'none', color: '#2563eb', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.9rem' }}
+          <Link 
+            to="/catalogo"
+            style={{ textDecoration: 'none', color: '#2563eb', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.9rem' }}
           >
             Ver todo <ArrowRight size={16} />
-          </button>
+          </Link>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.75rem' }}>
@@ -84,7 +85,6 @@ export const Home = ({ onSelectProduct, onNavigate }) => {
             <ProductCard 
               key={product.id} 
               product={product} 
-              onSelectProduct={onSelectProduct} 
             />
           ))}
         </div>
@@ -95,20 +95,20 @@ export const Home = ({ onSelectProduct, onNavigate }) => {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
           <div>
             <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#0f172a', margin: 0 }}>
-              Explora Nuestro Catálogo
+              Explora Nuestro Catálogo de Hardware
             </h2>
             <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
-              Encuentra los mejores accesorios y tecnología con stock garantizado
+              Más de 50 dispositivos, componentes y accesorios en stock
             </span>
           </div>
 
-          <button 
-            onClick={() => onNavigate('catalog')}
+          <Link 
+            to="/catalogo"
             className="btn-secondary"
-            style={{ fontSize: '0.85rem' }}
+            style={{ fontSize: '0.85rem', textDecoration: 'none' }}
           >
             Ir al Catálogo Completo
-          </button>
+          </Link>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.75rem' }}>
@@ -116,7 +116,6 @@ export const Home = ({ onSelectProduct, onNavigate }) => {
             <ProductCard 
               key={product.id} 
               product={product} 
-              onSelectProduct={onSelectProduct} 
             />
           ))}
         </div>

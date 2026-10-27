@@ -1,14 +1,14 @@
 import jsPDF from 'jspdf';
 
-// Generar PDF del Ticket o Factura y permitir descarga
+// Generar PDF del Ticket o Factura y permitir descarga para 0x1 Tech
 export const generatePdfDocument = ({ order, isInvoice = false }) => {
   const doc = new jsPDF();
-  const title = isInvoice ? "FACTURA ELECTRÓNICA SIMULADA" : "TICKET DE COMPRA";
+  const title = isInvoice ? "FACTURA ELECTRÓNICA SIMULADA - 0x1 TECH" : "TICKET DE COMPRA - 0x1 TECH";
 
   // Encabezado
   doc.setFontSize(18);
   doc.setTextColor(30, 41, 59);
-  doc.text("TECHSTORE MÉXICO S.A. DE C.V.", 14, 20);
+  doc.text("0x1 TECH S.A. DE C.V.", 14, 20);
 
   doc.setFontSize(12);
   doc.setTextColor(100, 116, 139);
@@ -30,7 +30,7 @@ export const generatePdfDocument = ({ order, isInvoice = false }) => {
   if (isInvoice && order.invoiceData) {
     doc.text(`RFC: ${order.invoiceData.rfc}`, 120, 53);
     doc.text(`Razón Social: ${order.invoiceData.businessName}`, 120, 59);
-    doc.text(`Uso CFDI: Gastos en general (G03)`, 120, 65);
+    doc.text(`Uso CFDI: G03 - Gastos en general`, 120, 65);
   }
 
   doc.line(14, 76, 196, 76);
@@ -76,16 +76,15 @@ export const generatePdfDocument = ({ order, isInvoice = false }) => {
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(100, 116, 139);
-  doc.text("Este comprobante ha sido generado por la plataforma interactiva de TechStore.", 14, y);
+  doc.text("Este comprobante ha sido generado por la plataforma tecnológica de 0x1 Tech.", 14, y);
   y += 5;
-  doc.text("Para consultar el estado de tu envío o realizar devoluciones, consulta nuestras Políticas de Devolución.", 14, y);
+  doc.text("Para consultar el estado de tu envío o solicitar devoluciones, ingresa a tu perfil o a Políticas de Devolución.", 14, y);
 
   return doc;
 };
 
-// Simulación de envío por correo electrónico (con registro y preview)
+// [BUG-MAIL-01] Despacho y registro del correo de confirmación
 export const sendOrderEmailSimulation = async ({ order, recipientEmail, sendInvoice = false }) => {
-  // Guardar en log de correos simulados en localStorage para visualización en el sistema
   const sentEmails = JSON.parse(localStorage.getItem('ecommerce_sent_emails') || '[]');
   
   const emailRecord = {
@@ -93,15 +92,17 @@ export const sendOrderEmailSimulation = async ({ order, recipientEmail, sendInvo
     sentAt: new Date().toISOString(),
     to: recipientEmail,
     subject: sendInvoice 
-      ? `Confirmación de Compra #${order.id} - Ticket y Factura Electrónica TechStore` 
-      : `Confirmación de Compra #${order.id} - Ticket TechStore`,
+      ? `Confirmación de Compra #${order.id} - Ticket y Factura Digital | 0x1 Tech` 
+      : `Confirmación de Compra #${order.id} - Ticket de Compra | 0x1 Tech`,
     orderId: order.id,
     hasInvoice: sendInvoice,
+    status: 'Entregado a servidor de correo',
     content: {
       client: order.customer.name,
       total: order.total,
       itemsCount: order.items.reduce((acc, i) => acc + i.quantity, 0),
-      shippingStatus: order.shippingStatus
+      shippingStatus: order.shippingStatus,
+      htmlPreview: `Hola ${order.customer.name}, tu pedido #${order.id} por un total de $${order.total.toFixed(2)} MXN ha sido procesado exitosamente por 0x1 Tech.`
     }
   };
 

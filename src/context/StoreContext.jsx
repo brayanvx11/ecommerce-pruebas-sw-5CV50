@@ -6,7 +6,6 @@ import {
   isFirebaseConfigured, 
   collection, 
   doc, 
-  getDocs, 
   setDoc, 
   updateDoc, 
   onSnapshot 
@@ -14,51 +13,67 @@ import {
 
 const StoreContext = createContext();
 
-const STORAGE_KEY_PRODUCTS = 'ecommerce_products_data';
-const STORAGE_KEY_CART = 'ecommerce_cart_items';
-const STORAGE_KEY_FAVORITES = 'ecommerce_user_favorites';
-const STORAGE_KEY_ORDERS = 'ecommerce_store_orders';
+const STORAGE_KEY_PRODUCTS = '0x1tech_products_data';
+const STORAGE_KEY_CART = '0x1tech_cart_items';
+const STORAGE_KEY_FAVORITES = '0x1tech_user_favorites';
+const STORAGE_KEY_ORDERS = '0x1tech_store_orders';
 
 export const StoreProvider = ({ children }) => {
   const { currentUser } = useAuth();
 
-  // Catálogo de productos
+  // Catálogo de productos con resiliencia offline [RFN02]
   const [products, setProducts] = useState(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_PRODUCTS);
-    return saved ? JSON.parse(saved) : initialProducts;
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_PRODUCTS);
+      return saved ? JSON.parse(saved) : initialProducts;
+    } catch {
+      return initialProducts;
+    }
   });
 
-  // Carrito de compras
+  // Carrito de compras persistente offline [RFN02]
   const [cart, setCart] = useState(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_CART);
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_CART);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
   });
 
   // Favoritos por usuario
   const [favorites, setFavorites] = useState(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_FAVORITES);
-    return saved ? JSON.parse(saved) : {};
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_FAVORITES);
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
   });
 
   // Pedidos
   const [orders, setOrders] = useState(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_ORDERS);
-    return saved ? JSON.parse(saved) : [
-      {
-        id: 'ORD-9821',
-        createdAt: '2026-10-14T10:30:00Z',
-        customer: { name: 'Mariana R.', email: 'mariana@example.com' },
-        items: [
-          { id: 'prod-1', name: 'Auriculares Inalámbricos Pro ANC', price: 1899, quantity: 1 }
-        ],
-        total: 1899,
-        paymentMethod: 'Tarjeta de Crédito',
-        shippingAddress: 'Av. Reforma 222, CDMX',
-        shippingStatus: 'En camino',
-        hasInvoice: true,
-        invoiceData: { rfc: 'RAM850312XX1', businessName: 'Mariana Ramos S.A.' }
-      }
-    ];
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_ORDERS);
+      return saved ? JSON.parse(saved) : [
+        {
+          id: 'ORD-9821',
+          createdAt: '2026-10-14T10:30:00Z',
+          customer: { id: 'usr-cliente', name: 'Mariana Ramos', email: 'cliente@tienda.com' },
+          items: [
+            { id: 'prod-1', name: 'Audífonos Inalámbricos Pro ANC', price: 1899, quantity: 1, image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80' }
+          ],
+          total: 1899,
+          paymentMethod: 'Tarjeta de Crédito / Débito',
+          shippingAddress: 'Av. Reforma 222, Cuauhtémoc, CDMX',
+          shippingStatus: 'En camino',
+          hasInvoice: true,
+          invoiceData: { rfc: 'RAM850312XX1', businessName: 'Mariana Ramos S.A. de C.V.' }
+        }
+      ];
+    } catch {
+      return [];
+    }
   });
 
   // Sincronización en tiempo real de productos con Firestore
@@ -72,7 +87,7 @@ export const StoreProvider = ({ children }) => {
         setProducts(firestoreProds);
       }
     }, (error) => {
-      console.warn("Firestore products listener:", error);
+      console.warn("Firestore products listener fallback:", error);
     });
 
     return () => unsubscribe();
@@ -89,41 +104,52 @@ export const StoreProvider = ({ children }) => {
         setOrders(firestoreOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
       }
     }, (error) => {
-      console.warn("Firestore orders listener:", error);
+      console.warn("Firestore orders listener fallback:", error);
     });
 
     return () => unsubscribe();
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_PRODUCTS, JSON.stringify(products));
+    try {
+      localStorage.setItem(STORAGE_KEY_PRODUCTS, JSON.stringify(products));
+    } catch (_) {}
   }, [products]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_CART, JSON.stringify(cart));
+    try {
+      localStorage.setItem(STORAGE_KEY_CART, JSON.stringify(cart));
+    } catch (_) {}
   }, [cart]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_FAVORITES, JSON.stringify(favorites));
+    try {
+      localStorage.setItem(STORAGE_KEY_FAVORITES, JSON.stringify(favorites));
+    } catch (_) {}
   }, [favorites]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_ORDERS, JSON.stringify(orders));
+    try {
+      localStorage.setItem(STORAGE_KEY_ORDERS, JSON.stringify(orders));
+    } catch (_) {}
   }, [orders]);
 
-  // --- CRUD de Carrito ---
+  // --- CRUD de Carrito con validación de Stock ---
   const addToCart = (product, quantity = 1) => {
+    let finalAdded = 0;
     setCart(prevCart => {
       const existing = prevCart.find(item => item.id === product.id);
       if (existing) {
+        const newQty = Math.min(existing.quantity + quantity, product.stock);
+        finalAdded = newQty - existing.quantity;
         return prevCart.map(item => 
-          item.id === product.id 
-            ? { ...item, quantity: Math.min(item.quantity + quantity, product.stock) } 
-            : item
+          item.id === product.id ? { ...item, quantity: newQty } : item
         );
       }
-      return [...prevCart, { ...product, quantity: Math.min(quantity, product.stock) }];
+      finalAdded = Math.min(quantity, product.stock);
+      return [...prevCart, { ...product, quantity: finalAdded }];
     });
+    return finalAdded;
   };
 
   const updateCartQuantity = (productId, quantity) => {
@@ -156,15 +182,17 @@ export const StoreProvider = ({ children }) => {
 
   const toggleFavorite = (productId) => {
     if (!currentUser) return false;
+    let added = false;
     setFavorites(prev => {
       const currentList = prev[currentUser.id] || [];
       const exists = currentList.includes(productId);
+      added = !exists;
       const updated = exists 
         ? currentList.filter(id => id !== productId) 
         : [...currentList, productId];
       return { ...prev, [currentUser.id]: updated };
     });
-    return true;
+    return added;
   };
 
   const isFavorite = (productId) => {
@@ -178,7 +206,7 @@ export const StoreProvider = ({ children }) => {
 
     const newReview = {
       id: 'rev-' + Date.now(),
-      user: user || 'Cliente anónimo',
+      user: user || 'Cliente 0x1 Tech',
       rating: Number(rating),
       comment,
       date: new Date().toISOString().split('T')[0]
@@ -208,7 +236,7 @@ export const StoreProvider = ({ children }) => {
 
     const newFaq = {
       question: questionText,
-      answer: "Tu consulta ha sido enviada al proveedor. Responderemos a la brevedad."
+      answer: "Tu consulta ha sido enviada al proveedor. El equipo técnico de 0x1 Tech te responderá a la brevedad."
     };
     const updatedFaqs = [...(targetProduct.faqs || []), newFaq];
 
@@ -306,6 +334,11 @@ export const StoreProvider = ({ children }) => {
   // --- Crear nuevo producto (Panel Admin) ---
   const addProduct = async (productData) => {
     const newId = 'prod-' + Date.now();
+    const tagsArray = (productData.tagsString || '')
+      .split(',')
+      .map(t => t.trim().toLowerCase())
+      .filter(Boolean);
+
     const newProduct = {
       id: newId,
       name: productData.name.trim(),
@@ -317,6 +350,7 @@ export const StoreProvider = ({ children }) => {
       description: productData.description.trim() || 'Sin descripción disponible.',
       boughtCount: 0,
       isFeatured: Boolean(productData.isFeatured),
+      tags: tagsArray,
       faqs: [],
       reviews: []
     };
@@ -333,7 +367,7 @@ export const StoreProvider = ({ children }) => {
     return newProduct;
   };
 
-  // --- Función para poblar/sembrar productos en Firestore desde el panel o script ---
+  // --- Función para sembrar catálogo comercial en Firestore ---
   const seedFirestoreProducts = async () => {
     if (!isFirebaseConfigured || !db) {
       throw new Error("Firebase no está configurado en el archivo .env");

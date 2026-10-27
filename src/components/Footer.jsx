@@ -1,67 +1,73 @@
 import React from 'react';
-import { ShoppingBag, Heart, ShieldCheck, Mail, Phone, ExternalLink } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ShoppingBag, ExternalLink } from 'lucide-react';
 
-export const Footer = ({ setCurrentView }) => {
+export const Footer = () => {
   return (
     <footer style={{ backgroundColor: '#0f172a', color: '#f8fafc', paddingTop: '3.5rem', paddingBottom: '2.5rem', marginTop: '4rem', borderTop: '1px solid #1e293b' }}>
       <div className="container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '2.5rem' }}>
         
-        {/* Marca & Misión */}
+        {/* Marca & Misión: 0x1 Tech */}
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem' }}>
-            <div style={{ backgroundColor: '#2563eb', padding: '0.4rem', borderRadius: '0.4rem', display: 'flex' }}>
-              <ShoppingBag size={20} color="#ffffff" />
+            <div style={{ backgroundColor: '#0f172a', color: '#38bdf8', padding: '0.4rem', borderRadius: '0.4rem', display: 'flex', border: '1px solid #334155' }}>
+              <ShoppingBag size={22} />
             </div>
-            <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#ffffff' }}>TechStore México</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+              <span style={{ fontSize: '1.25rem', fontWeight: '900', color: '#ffffff' }}>0x1</span>
+              <span style={{ fontSize: '1.25rem', fontWeight: '900', color: '#38bdf8' }}>Tech</span>
+            </div>
           </div>
           <p style={{ color: '#94a3b8', fontSize: '0.9rem', lineHeight: '1.6' }}>
-            Tu plataforma de tecnología líder. Encuentra productos de alta calidad, envíos rápidos garantizados y soporte 24/7.
+            Especialistas en hardware, computación de alto rendimiento, audio y periféricos. Calidad probada, envíos garantizados y soporte técnico especializado.
           </p>
         </div>
 
-        {/* Redes Sociales Requeridas */}
+        {/* [BUG-UI-01] Redes Sociales Institucionales Reparadas */}
         <div>
           <h4 style={{ fontSize: '1rem', fontWeight: '600', color: '#ffffff', marginBottom: '1.2rem' }}>Síguenos en Redes</h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             
             <a 
-              href="https://instagram.com/techstore_mx" 
+              href="https://instagram.com/0x1tech_oficial" 
               target="_blank" 
               rel="noopener noreferrer"
               style={{ color: '#cbd5e1', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.9rem', transition: 'color 0.2s' }}
               onMouseOver={(e) => e.currentTarget.style.color = '#e1306c'}
               onMouseOut={(e) => e.currentTarget.style.color = '#cbd5e1'}
             >
-              <span style={{ fontWeight: '600' }}>Instagram:</span> @techstore_mx
+              <span style={{ fontWeight: '600' }}>Instagram:</span> @0x1tech_oficial
               <ExternalLink size={14} />
             </a>
 
             <a 
-              href="https://x.com/techstore_mx" 
+              href="https://x.com/0x1tech_mx" 
               target="_blank" 
               rel="noopener noreferrer"
               style={{ color: '#cbd5e1', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.9rem', transition: 'color 0.2s' }}
               onMouseOver={(e) => e.currentTarget.style.color = '#38bdf8'}
               onMouseOut={(e) => e.currentTarget.style.color = '#cbd5e1'}
             >
-              <span style={{ fontWeight: '600' }}>X (Twitter):</span> @techstore_mx
+              <span style={{ fontWeight: '600' }}>X (Twitter):</span> @0x1tech_mx
               <ExternalLink size={14} />
             </a>
 
+            {/* [BUG-UI-01] Enlace institucional a TikTok */}
             <a 
-              href="https://tiktok.com/@techstore_mx" 
+              href="https://www.tiktok.com/@0x1tech" 
               target="_blank" 
               rel="noopener noreferrer"
               style={{ color: '#cbd5e1', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.9rem', transition: 'color 0.2s' }}
               onMouseOver={(e) => e.currentTarget.style.color = '#22d3ee'}
               onMouseOut={(e) => e.currentTarget.style.color = '#cbd5e1'}
             >
-              <span style={{ fontWeight: '600' }}>TikTok:</span> @techstore_mx
+              <span style={{ fontWeight: '600' }}>TikTok:</span> @0x1tech
               <ExternalLink size={14} />
             </a>
 
+            {/* [BUG-UI-01] Enlace institucional a WhatsApp con mensaje de bienvenida */}
             <a 
-              href="https://wa.me/525512345678" 
+              href="https://api.whatsapp.com/send?phone=525512345678&text=Hola%200x1%20Tech,%20deseo%20informaci%C3%B3n%20sobre%20un%20producto" 
               target="_blank" 
               rel="noopener noreferrer"
               style={{ color: '#cbd5e1', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.9rem', transition: 'color 0.2s' }}
@@ -80,23 +86,23 @@ export const Footer = ({ setCurrentView }) => {
           <h4 style={{ fontSize: '1rem', fontWeight: '600', color: '#ffffff', marginBottom: '1.2rem' }}>Información Legal</h4>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.6rem', fontSize: '0.9rem' }}>
             <li>
-              <button 
-                onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); setCurrentView('returns'); }}
-                style={{ background: 'none', border: 'none', color: '#60a5fa', cursor: 'pointer', padding: 0, fontSize: '0.9rem', textDecoration: 'underline' }}
+              <Link 
+                to="/devoluciones"
+                style={{ color: '#60a5fa', textDecoration: 'underline', fontSize: '0.9rem' }}
               >
                 Políticas de Devolución
-              </button>
+              </Link>
             </li>
-            <li style={{ color: '#94a3b8' }}>Términos y Condiciones</li>
-            <li style={{ color: '#94a3b8' }}>Aviso de Privacidad</li>
-            <li style={{ color: '#94a3b8' }}>Facturación Electrónica CFDI</li>
+            <li style={{ color: '#94a3b8' }}>Garantía 0x1 Tech (12 meses)</li>
+            <li style={{ color: '#94a3b8' }}>Aviso de Privacidad Integral</li>
+            <li style={{ color: '#94a3b8' }}>Facturación Electrónica CFDI 4.0</li>
           </ul>
         </div>
 
       </div>
 
       <div className="container" style={{ marginTop: '2.5rem', paddingTop: '1.5rem', borderTop: '1px solid #1e293b', textAlign: 'center', color: '#64748b', fontSize: '0.85rem' }}>
-        © {new Date().getFullYear()} TechStore Inc. Todos los derechos reservados. Desarrollado según especificaciones de requermientos_iniciales.md.
+        © {new Date().getFullYear()} 0x1 Tech S.A. de C.V. Todos los derechos reservados. Plataforma de comercio electrónico.
       </div>
     </footer>
   );

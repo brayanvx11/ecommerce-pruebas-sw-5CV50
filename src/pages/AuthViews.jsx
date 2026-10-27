@@ -1,19 +1,20 @@
 import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LogIn, KeyRound, ArrowRight, UserPlus, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
+import { LogIn, KeyRound, UserPlus, CheckCircle2 } from 'lucide-react';
 
-export const AuthViews = ({ initialView = 'login', onNavigate, onSuccess }) => {
-  const { login, register, loginWithGoogle, sendPasswordReset, resetPasswordWithToken, isFirebaseConfigured } = useAuth();
-  
+export const AuthViews = ({ initialView = 'login' }) => {
+  const { login, register, loginWithGoogle, sendPasswordReset, isFirebaseConfigured } = useAuth();
+  const { addToast } = useToast();
+  const navigate = useNavigate();
+
   const [view, setView] = useState(initialView); // 'login' | 'register' | 'forgot' | 'reset-code'
-  const [role, setRole] = useState('Cliente');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  
+
   // Para recuperación
-  const [resetToken, setResetToken] = useState('');
-  const [newPassword, setNewPassword] = useState('');
   const [resetFeedback, setResetFeedback] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -22,10 +23,12 @@ export const AuthViews = ({ initialView = 'login', onNavigate, onSuccess }) => {
     e.preventDefault();
     setErrorMessage('');
     try {
-      await login(email, password);
-      onSuccess();
+      const user = await login(email, password);
+      addToast(`¡Bienvenido de nuevo, ${user.name}!`, 'success');
+      navigate('/');
     } catch (err) {
       setErrorMessage(err.message);
+      addToast(err.message, 'error');
     }
   };
 
@@ -33,10 +36,12 @@ export const AuthViews = ({ initialView = 'login', onNavigate, onSuccess }) => {
     setErrorMessage('');
     setIsGoogleLoading(true);
     try {
-      await loginWithGoogle();
-      onSuccess();
+      const user = await loginWithGoogle();
+      addToast(`¡Sesión iniciada con Google como ${user.name}!`, 'success');
+      navigate('/');
     } catch (err) {
       setErrorMessage(err.message);
+      addToast(err.message, 'error');
     } finally {
       setIsGoogleLoading(false);
     }
@@ -46,10 +51,14 @@ export const AuthViews = ({ initialView = 'login', onNavigate, onSuccess }) => {
     e.preventDefault();
     setErrorMessage('');
     try {
-      await register({ name, email, password, role });
-      onSuccess();
+      // [BUG-AUTH-02] y [BUG-AUTH-01]: nombre y apellido obligatorio, rol forzado a Cliente
+      await register({ name, email, password, role: 'Cliente' });
+      // [1.1] Mensaje cálido empático solicitado
+      addToast('¡Ya estás con nosotros! Bienvenido a 0x1 Tech.', 'success', 5000);
+      navigate('/');
     } catch (err) {
       setErrorMessage(err.message);
+      addToast(err.message, 'error');
     }
   };
 
@@ -57,31 +66,21 @@ export const AuthViews = ({ initialView = 'login', onNavigate, onSuccess }) => {
     e.preventDefault();
     setErrorMessage('');
     try {
+      // [BUG-AUTH-04]: Rate limiting controlado con feedback amigable
       const res = await sendPasswordReset(email);
       setResetFeedback(res);
       setView('reset-code');
+      addToast('Instrucciones de recuperación enviadas a tu correo.', 'info');
     } catch (err) {
       setErrorMessage(err.message);
-    }
-  };
-
-  const handleApplyReset = async (e) => {
-    e.preventDefault();
-    setErrorMessage('');
-    try {
-      await resetPasswordWithToken(email, resetToken, newPassword);
-      alert('¡Contraseña restablecida exitosamente! Ahora puedes iniciar sesión.');
-      setView('login');
-      setPassword('');
-    } catch (err) {
-      setErrorMessage(err.message);
+      addToast(err.message, 'error');
     }
   };
 
   return (
     <div className="container" style={{ paddingTop: '3rem', paddingBottom: '4rem' }}>
-      <div style={{ maxWidth: '460px', margin: '0 auto', backgroundColor: '#ffffff', borderRadius: '1rem', border: '1px solid #e2e8f0', padding: '2rem', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-        
+      <div style={{ maxWidth: '460px', margin: '0 auto', backgroundColor: '#ffffff', borderRadius: '1rem', border: '1px solid #e2e8f0', padding: '2.5rem', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+
         {/* Mensaje de error general */}
         {errorMessage && (
           <div style={{ padding: '0.75rem', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: '0.5rem', marginBottom: '1.25rem', fontSize: '0.9rem' }}>
@@ -98,12 +97,12 @@ export const AuthViews = ({ initialView = 'login', onNavigate, onSuccess }) => {
               </div>
               <h2 style={{ fontSize: '1.6rem', fontWeight: '800', color: '#0f172a', margin: 0 }}>Iniciar Sesión</h2>
               <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '0.25rem' }}>
-                {isFirebaseConfigured ? 'Conectado a Firebase Auth' : 'Accede a tu cuenta de cliente o administrador'}
+                Accede a tu cuenta de 0x1 Tech
               </p>
             </div>
 
             {/* Botón de Login con Google */}
-            <button 
+            <button
               type="button"
               disabled={isGoogleLoading}
               onClick={handleGoogleSignIn}
@@ -129,10 +128,10 @@ export const AuthViews = ({ initialView = 'login', onNavigate, onSuccess }) => {
               onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
             >
               <svg width="20" height="20" viewBox="0 0 48 48">
-                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
               </svg>
               {isGoogleLoading ? 'Accediendo con Google...' : 'Continuar con Google'}
             </button>
@@ -146,10 +145,10 @@ export const AuthViews = ({ initialView = 'login', onNavigate, onSuccess }) => {
             <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '500', color: '#475569', marginBottom: '0.3rem' }}>Correo Electrónico:</label>
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   required
-                  placeholder="ejemplo@tienda.com"
+                  placeholder="ejemplo@0x1tech.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   style={{ width: '100%', padding: '0.65rem', borderRadius: '0.5rem', border: '1px solid #cbd5e1' }}
@@ -159,16 +158,16 @@ export const AuthViews = ({ initialView = 'login', onNavigate, onSuccess }) => {
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
                   <label style={{ fontSize: '0.85rem', fontWeight: '500', color: '#475569' }}>Contraseña:</label>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => { setErrorMessage(''); setView('forgot'); }}
                     style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '0.8rem', cursor: 'pointer', padding: 0 }}
                   >
                     ¿Olvidaste tu contraseña?
                   </button>
                 </div>
-                <input 
-                  type="password" 
+                <input
+                  type="password"
                   required
                   placeholder="••••••••"
                   value={password}
@@ -184,8 +183,8 @@ export const AuthViews = ({ initialView = 'login', onNavigate, onSuccess }) => {
 
             <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.9rem', color: '#64748b' }}>
               ¿Aún no tienes cuenta?{' '}
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => { setErrorMessage(''); setView('register'); }}
                 style={{ background: 'none', border: 'none', color: '#2563eb', fontWeight: 'bold', cursor: 'pointer', padding: 0 }}
               >
@@ -195,19 +194,19 @@ export const AuthViews = ({ initialView = 'login', onNavigate, onSuccess }) => {
           </div>
         )}
 
-        {/* 2. VISTA DE REGISTRO */}
+        {/* 2. VISTA DE REGISTRO [BUG-AUTH-02] */}
         {view === 'register' && (
           <div>
             <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
               <div style={{ backgroundColor: '#eff6ff', color: '#2563eb', width: '50px', height: '50px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.75rem auto' }}>
                 <UserPlus size={26} />
               </div>
-              <h2 style={{ fontSize: '1.6rem', fontWeight: '800', color: '#0f172a', margin: 0 }}>Crear Cuenta</h2>
-              <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '0.25rem' }}>Regístrate para comprar y gestionar tus pedidos</p>
+              <h2 style={{ fontSize: '1.6rem', fontWeight: '800', color: '#0f172a', margin: 0 }}>Crear Cuenta en 0x1 Tech</h2>
+              <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '0.25rem' }}>Regístrate para comprar y rastrear tus paquetes</p>
             </div>
 
             {/* Registro rápido con Google */}
-            <button 
+            <button
               type="button"
               disabled={isGoogleLoading}
               onClick={handleGoogleSignIn}
@@ -230,10 +229,10 @@ export const AuthViews = ({ initialView = 'login', onNavigate, onSuccess }) => {
               }}
             >
               <svg width="20" height="20" viewBox="0 0 48 48">
-                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
               </svg>
               {isGoogleLoading ? 'Registrando con Google...' : 'Registrarse con Google'}
             </button>
@@ -246,23 +245,26 @@ export const AuthViews = ({ initialView = 'login', onNavigate, onSuccess }) => {
 
             <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '500', color: '#475569', marginBottom: '0.3rem' }}>Nombre Completo:</label>
-                <input 
-                  type="text" 
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '500', color: '#475569', marginBottom: '0.3rem' }}>
+                  Nombre y Apellido completo: *
+                </label>
+                <input
+                  type="text"
                   required
-                  placeholder="Ej: Laura Morales"
+                  placeholder="Ej: Juan Pérez Morales"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   style={{ width: '100%', padding: '0.65rem', borderRadius: '0.5rem', border: '1px solid #cbd5e1' }}
                 />
+                <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Ingresa al menos un nombre y un apellido.</span>
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '500', color: '#475569', marginBottom: '0.3rem' }}>Correo Electrónico:</label>
-                <input 
-                  type="email" 
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '500', color: '#475569', marginBottom: '0.3rem' }}>Correo Electrónico: *</label>
+                <input
+                  type="email"
                   required
-                  placeholder="ejemplo@correo.com"
+                  placeholder="ejemplo@0x1tech.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   style={{ width: '100%', padding: '0.65rem', borderRadius: '0.5rem', border: '1px solid #cbd5e1' }}
@@ -270,39 +272,29 @@ export const AuthViews = ({ initialView = 'login', onNavigate, onSuccess }) => {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '500', color: '#475569', marginBottom: '0.3rem' }}>Contraseña:</label>
-                <input 
-                  type="password" 
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '500', color: '#475569', marginBottom: '0.3rem' }}>Contraseña: *</label>
+                <input
+                  type="password"
                   required
                   minLength={6}
-                  placeholder="Al menos 6 caracteres"
+                  placeholder="Mínimo 6 caracteres"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   style={{ width: '100%', padding: '0.65rem', borderRadius: '0.5rem', border: '1px solid #cbd5e1' }}
                 />
               </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '500', color: '#475569', marginBottom: '0.3rem' }}>Rol asignado:</label>
-                <select 
-                  value={role} 
-                  onChange={(e) => setRole(e.target.value)}
-                  style={{ width: '100%', padding: '0.65rem', borderRadius: '0.5rem', border: '1px solid #cbd5e1', cursor: 'pointer' }}
-                >
-                  <option value="Cliente">Cliente (Comprador)</option>
-                  <option value="Administrador">Administrador (Gestión & Alertas)</option>
-                </select>
-              </div>
+
 
               <button type="submit" className="btn-primary" style={{ padding: '0.75rem', fontSize: '1rem', marginTop: '0.5rem' }}>
-                Completar Registro
+                Crear Mi Cuenta en 0x1 Tech
               </button>
             </form>
 
             <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.9rem', color: '#64748b' }}>
               ¿Ya tienes cuenta?{' '}
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => { setErrorMessage(''); setView('login'); }}
                 style={{ background: 'none', border: 'none', color: '#2563eb', fontWeight: 'bold', cursor: 'pointer', padding: 0 }}
               >
@@ -321,17 +313,17 @@ export const AuthViews = ({ initialView = 'login', onNavigate, onSuccess }) => {
               </div>
               <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#0f172a', margin: 0 }}>Restablecer Contraseña</h2>
               <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '0.25rem' }}>
-                Te enviaremos un correo oficial desde Firebase para cambiar tu clave
+                Te enviaremos un correo con las instrucciones de restablecimiento seguro
               </p>
             </div>
 
             <form onSubmit={handleSendReset} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '500', color: '#475569', marginBottom: '0.3rem' }}>Ingresa tu correo registrado:</label>
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   required
-                  placeholder="ejemplo@correo.com"
+                  placeholder="ejemplo@0x1tech.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   style={{ width: '100%', padding: '0.65rem', borderRadius: '0.5rem', border: '1px solid #cbd5e1' }}
@@ -342,8 +334,8 @@ export const AuthViews = ({ initialView = 'login', onNavigate, onSuccess }) => {
                 Enviar Correo de Recuperación
               </button>
 
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setView('login')}
                 className="btn-secondary"
                 style={{ padding: '0.65rem', fontSize: '0.9rem' }}
@@ -373,8 +365,8 @@ export const AuthViews = ({ initialView = 'login', onNavigate, onSuccess }) => {
               </div>
             )}
 
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => setView('login')}
               className="btn-primary"
               style={{ width: '100%', padding: '0.75rem', fontSize: '0.95rem' }}

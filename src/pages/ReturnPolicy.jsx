@@ -1,7 +1,8 @@
 import React from 'react';
-import { RefreshCw, CheckCircle2, ShieldCheck, Clock, FileText } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { RefreshCw, CheckCircle2, ShieldCheck, Clock, FileText, ArrowRight } from 'lucide-react';
 
-export const ReturnPolicy = ({ onNavigateToCatalog }) => {
+export const ReturnPolicy = () => {
   return (
     <div className="container" style={{ paddingTop: '3rem', paddingBottom: '4rem' }}>
       
@@ -17,7 +18,7 @@ export const ReturnPolicy = ({ onNavigateToCatalog }) => {
               Políticas de Devolución y Reembolso
             </h1>
             <span style={{ color: '#64748b', fontSize: '0.9rem' }}>
-              Transparencia y tranquilidad garantizada para todos nuestros clientes de TechStore.
+              Transparencia y tranquilidad garantizada para todos nuestros clientes de 0x1 Tech.
             </span>
           </div>
         </div>
@@ -53,7 +54,7 @@ export const ReturnPolicy = ({ onNavigateToCatalog }) => {
               <FileText size={18} color="#2563eb" /> 3. Comprobante de Compra
             </h3>
             <p style={{ margin: 0 }}>
-              Es indispensable presentar el número de folio de la orden (ej. <em>ORD-1234</em>), el <strong>ticket de compra</strong> o la <strong>factura fiscal</strong> enviada automáticamente a tu correo electrónico al momento de realizar la compra.
+              Es indispensable presentar el número de folio de la orden (ej. <em>ORD-1234</em>), el <strong>ticket de compra</strong> o la <strong>factura fiscal</strong> enviada automáticamente a tu correo electrónico al momento de realizar la compra o descargada desde tu sección de <strong>Mis Compras</strong>.
             </p>
           </div>
 
@@ -70,13 +71,13 @@ export const ReturnPolicy = ({ onNavigateToCatalog }) => {
 
         {/* Botón de acción */}
         <div style={{ marginTop: '2.5rem', borderTop: '1px solid #f1f5f9', paddingTop: '1.5rem', textAlign: 'center' }}>
-          <button 
-            onClick={onNavigateToCatalog}
+          <Link 
+            to="/catalogo"
             className="btn-primary"
-            style={{ padding: '0.75rem 1.5rem' }}
+            style={{ padding: '0.75rem 1.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none' }}
           >
-            Explorar el Catálogo con Total Confianza
-          </button>
+            Explorar el Catálogo con Total Confianza <ArrowRight size={17} />
+          </Link>
         </div>
 
       </div>

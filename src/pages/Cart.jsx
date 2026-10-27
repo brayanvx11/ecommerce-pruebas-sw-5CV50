@@ -1,33 +1,47 @@
 import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, ArrowLeft } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
-export const Cart = ({ onProceedToCheckout, onContinueShopping, onRequireLogin }) => {
+export const Cart = () => {
   const { cart, updateCartQuantity, removeFromCart, clearCart, cartTotal } = useStore();
   const { isAuthenticated } = useAuth();
+  const { addToast } = useToast();
+  const navigate = useNavigate();
 
   const handleCheckoutClick = () => {
     if (!isAuthenticated) {
-      alert('Debes iniciar sesión o registrarte para completar tu compra. Los invitados pueden explorar el catálogo pero no comprar.');
-      onRequireLogin();
+      addToast('Debes iniciar sesión para comprar. Los invitados pueden navegar el catálogo.', 'info');
+      navigate('/login');
       return;
     }
-    onProceedToCheckout();
+    navigate('/checkout');
+  };
+
+  const handleRemove = (item) => {
+    removeFromCart(item.id);
+    addToast(`"${item.name}" eliminado del carrito.`, 'info');
+  };
+
+  const handleClear = () => {
+    clearCart();
+    addToast('Has vaciado tu carrito de compras.', 'info');
   };
 
   if (cart.length === 0) {
     return (
       <div className="container" style={{ paddingTop: '4rem', paddingBottom: '4rem', textAlign: 'center' }}>
-        <div style={{ maxWidth: '420px', margin: '0 auto', backgroundColor: '#ffffff', padding: '3rem 2rem', borderRadius: '1rem', border: '1px solid #e2e8f0' }}>
+        <div style={{ maxWidth: '440px', margin: '0 auto', backgroundColor: '#ffffff', padding: '3rem 2rem', borderRadius: '1rem', border: '1px solid #e2e8f0' }}>
           <div style={{ backgroundColor: '#f1f5f9', width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto', color: '#64748b' }}>
             <ShoppingBag size={32} />
           </div>
           <h2 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#0f172a', margin: '0 0 0.5rem 0' }}>Tu carrito está vacío</h2>
-          <p style={{ color: '#64748b', fontSize: '0.95rem', margin: '0 0 1.5rem 0' }}>Explora nuestro catálogo y descubre productos de tecnología increíbles.</p>
-          <button onClick={onContinueShopping} className="btn-primary" style={{ width: '100%' }}>
+          <p style={{ color: '#64748b', fontSize: '0.95rem', margin: '0 0 1.5rem 0' }}>Explora nuestro catálogo de más de 50 artículos de hardware y tecnología.</p>
+          <Link to="/catalogo" className="btn-primary" style={{ width: '100%', textDecoration: 'none' }}>
             Explorar Catálogo
-          </button>
+          </Link>
         </div>
       </div>
     );
@@ -47,7 +61,7 @@ export const Cart = ({ onProceedToCheckout, onContinueShopping, onRequireLogin }
         </div>
 
         <button 
-          onClick={clearCart}
+          onClick={handleClear}
           style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: '500' }}
         >
           <Trash2 size={16} /> Vaciar carrito
@@ -76,18 +90,21 @@ export const Cart = ({ onProceedToCheckout, onContinueShopping, onRequireLogin }
               />
 
               <div style={{ flex: 1 }}>
-                <h4 style={{ margin: '0 0 0.3rem 0', fontSize: '1rem', fontWeight: '600', color: '#1e293b' }}>
+                <h4 style={{ margin: '0 0 0.3rem 0', fontSize: '0.98rem', fontWeight: '600', color: '#1e293b' }}>
                   {item.name}
                 </h4>
                 <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.5rem' }}>
-                  Precio unitario: ${item.price.toFixed(2)} MXN
+                  Precio: ${item.price.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN
                 </div>
                 
                 {/* Controles de Cantidad (CRUD) */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #cbd5e1', borderRadius: '0.4rem', backgroundColor: '#ffffff' }}>
                     <button 
-                      onClick={() => updateCartQuantity(item.id, item.quantity - 1)}
+                      onClick={() => {
+                        updateCartQuantity(item.id, item.quantity - 1);
+                        addToast(`Cantidad modificada para "${item.name}"`, 'info', 2000);
+                      }}
                       style={{ background: 'none', border: 'none', padding: '0.3rem 0.6rem', cursor: 'pointer', color: '#475569' }}
                       title="Disminuir"
                     >
@@ -97,7 +114,10 @@ export const Cart = ({ onProceedToCheckout, onContinueShopping, onRequireLogin }
                       {item.quantity}
                     </span>
                     <button 
-                      onClick={() => updateCartQuantity(item.id, item.quantity + 1)}
+                      onClick={() => {
+                        updateCartQuantity(item.id, item.quantity + 1);
+                        addToast(`Cantidad aumentada para "${item.name}"`, 'success', 2000);
+                      }}
                       disabled={item.quantity >= item.stock}
                       style={{ 
                         background: 'none', border: 'none', padding: '0.3rem 0.6rem', 
@@ -111,7 +131,7 @@ export const Cart = ({ onProceedToCheckout, onContinueShopping, onRequireLogin }
                   </div>
 
                   <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
-                    (Máx: {item.stock})
+                    (Máx disponible: {item.stock})
                   </span>
                 </div>
               </div>
@@ -119,11 +139,11 @@ export const Cart = ({ onProceedToCheckout, onContinueShopping, onRequireLogin }
               {/* Subtotal del item y botón eliminar */}
               <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
                 <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#0f172a' }}>
-                  ${(item.price * item.quantity).toFixed(2)} MXN
+                  ${(item.price * item.quantity).toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN
                 </span>
 
                 <button 
-                  onClick={() => removeFromCart(item.id)}
+                  onClick={() => handleRemove(item)}
                   style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '0.3rem' }}
                   title="Eliminar producto"
                   onMouseOver={(e) => e.currentTarget.style.color = '#ef4444'}
@@ -146,22 +166,22 @@ export const Cart = ({ onProceedToCheckout, onContinueShopping, onRequireLogin }
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.95rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem', marginBottom: '1rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
               <span>Subtotal</span>
-              <span>${cartTotal.toFixed(2)} MXN</span>
+              <span>${cartTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
-              <span>Envío estándar</span>
-              <span style={{ color: '#15803d', fontWeight: '600' }}>Gratis</span>
+              <span>Envío estándar nacional</span>
+              <span style={{ color: '#15803d', fontWeight: '600' }}>Gratis (0x1 Express)</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
-              <span>IVA estimado (incluido)</span>
-              <span>${(cartTotal - (cartTotal / 1.16)).toFixed(2)} MXN</span>
+              <span>IVA estimado (16% incluido)</span>
+              <span>${(cartTotal - (cartTotal / 1.16)).toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN</span>
             </div>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '1.5rem' }}>
             <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#0f172a' }}>Total a pagar</span>
             <span style={{ fontSize: '1.6rem', fontWeight: '800', color: '#2563eb' }}>
-              ${cartTotal.toFixed(2)} MXN
+              ${cartTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN
             </span>
           </div>
 
@@ -173,13 +193,13 @@ export const Cart = ({ onProceedToCheckout, onContinueShopping, onRequireLogin }
             Proceder al Checkout <ArrowRight size={18} />
           </button>
 
-          <button 
-            onClick={onContinueShopping}
+          <Link 
+            to="/catalogo"
             className="btn-secondary"
-            style={{ width: '100%', padding: '0.75rem', fontSize: '0.9rem' }}
+            style={{ width: '100%', padding: '0.75rem', fontSize: '0.9rem', textDecoration: 'none' }}
           >
             <ArrowLeft size={16} /> Continuar comprando
-          </button>
+          </Link>
 
           {!isAuthenticated && (
             <p style={{ margin: '1rem 0 0 0', fontSize: '0.8rem', color: '#e11d48', backgroundColor: '#fff1f2', padding: '0.6rem', borderRadius: '0.4rem', textAlign: 'center' }}>

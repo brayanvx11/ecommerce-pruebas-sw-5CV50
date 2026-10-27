@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { useAuth } from '../context/AuthContext';
-import { AlertTriangle, Package, Truck, CheckCircle2, Clock, Mail, RefreshCw, Box, PlusCircle } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
+import { AlertTriangle, Package, Truck, CheckCircle2, Clock, Mail, RefreshCw, Box, PlusCircle, Tag } from 'lucide-react';
 
 export const AdminDashboard = () => {
   const { products, orders, updateShippingStatus, updateProductStock, addProduct, seedFirestoreProducts } = useStore();
   const { currentUser, isFirebaseConfigured } = useAuth();
+  const { showSuccess, showError, showInfo } = useToast();
 
   const [activeTab, setActiveTab] = useState('inventory'); // 'inventory' | 'new-product' | 'orders' | 'emails'
   const [stockEdit, setStockEdit] = useState({});
@@ -19,13 +21,14 @@ export const AdminDashboard = () => {
   const [newProdStock, setNewProdStock] = useState('10');
   const [newProdImage, setNewProdImage] = useState('');
   const [newProdDescription, setNewProdDescription] = useState('');
+  const [newProdTags, setNewProdTags] = useState('');
   const [newProdFeatured, setNewProdFeatured] = useState(false);
   const [isCreatingProd, setIsCreatingProd] = useState(false);
 
   const handleCreateProduct = async (e) => {
     e.preventDefault();
     if (!newProdName.trim() || !newProdPrice) {
-      alert('Por favor ingresa al menos el nombre y precio del producto.');
+      showError('Por favor ingresa al menos el nombre y precio del producto.');
       return;
     }
 
@@ -38,19 +41,21 @@ export const AdminDashboard = () => {
         stock: newProdStock,
         image: newProdImage,
         description: newProdDescription,
+        tagsString: newProdTags,
         isFeatured: newProdFeatured
       });
 
-      alert('¡Producto creado y publicado con éxito!');
+      showSuccess('¡Producto creado y publicado con éxito en el catálogo de 0x1 Tech!');
       setNewProdName('');
       setNewProdPrice('');
       setNewProdStock('10');
       setNewProdImage('');
       setNewProdDescription('');
+      setNewProdTags('');
       setNewProdFeatured(false);
       setActiveTab('inventory');
     } catch (err) {
-      alert('Error al agregar el producto: ' + err.message);
+      showError('Error al agregar el producto: ' + err.message);
     } finally {
       setIsCreatingProd(false);
     }
@@ -68,9 +73,9 @@ export const AdminDashboard = () => {
       await seedFirestoreProducts();
       setSeedSuccess(true);
       setTimeout(() => setSeedSuccess(false), 4000);
-      alert('¡Productos cargados exitosamente a tu base de datos Cloud Firestore!');
+      showSuccess('¡Productos cargados exitosamente a tu base de datos Cloud Firestore!');
     } catch (e) {
-      alert('Error al sincronizar con Firestore: ' + e.message);
+      showError('Error al sincronizar con Firestore: ' + e.message);
     } finally {
       setIsSeeding(false);
     }
@@ -341,6 +346,22 @@ export const AdminDashboard = () => {
                 onChange={(e) => setNewProdImage(e.target.value)}
                 style={{ width: '100%', padding: '0.65rem', borderRadius: '0.5rem', border: '1px solid #cbd5e1', fontSize: '0.95rem' }}
               />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#334155', marginBottom: '0.3rem' }}>
+                Etiquetas y Sinónimos de Búsqueda (separados por comas):
+              </label>
+              <input 
+                type="text" 
+                placeholder="Ej: cascos, audifonos, diadema, bluetooth, anc"
+                value={newProdTags}
+                onChange={(e) => setNewProdTags(e.target.value)}
+                style={{ width: '100%', padding: '0.65rem', borderRadius: '0.5rem', border: '1px solid #cbd5e1', fontSize: '0.95rem' }}
+              />
+              <span style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.2rem', display: 'block' }}>
+                Permite a los usuarios encontrar el producto en el buscador usando términos coloquiales o alternativos.
+              </span>
             </div>
 
             <div>

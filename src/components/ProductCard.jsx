@@ -1,30 +1,46 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Star, Heart, ShoppingCart } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
-export const ProductCard = ({ product, onSelectProduct }) => {
+export const ProductCard = ({ product }) => {
   const { toggleFavorite, isFavorite, addToCart } = useStore();
   const { isAuthenticated } = useAuth();
+  const { addToast } = useToast();
+  const navigate = useNavigate();
+
   const favorite = isFavorite(product.id);
 
   const handleFavoriteClick = (e) => {
     e.stopPropagation();
     if (!isAuthenticated) {
-      alert('Debes iniciar sesión para guardar productos en tus Favoritos.');
+      addToast('Inicia sesión para guardar productos en tus Favoritos.', 'info');
+      navigate('/login');
       return;
     }
-    toggleFavorite(product.id);
+    const added = toggleFavorite(product.id);
+    if (added) {
+      addToast(`"${product.name}" agregado a tus Favoritos ❤️`, 'success');
+    } else {
+      addToast(`"${product.name}" eliminado de tus Favoritos`, 'info');
+    }
   };
 
   const handleAddToCart = (e) => {
     e.stopPropagation();
-    addToCart(product, 1);
+    const added = addToCart(product, 1);
+    if (added > 0) {
+      addToast(`"${product.name}" agregado a tu carrito exitosamente 🛒`, 'success');
+    } else {
+      addToast('No hay más stock disponible de este producto.', 'error');
+    }
   };
 
   return (
     <div 
-      onClick={() => onSelectProduct(product)}
+      onClick={() => navigate(`/producto/${product.id}`)}
       style={{
         backgroundColor: '#ffffff',
         borderRadius: '0.75rem',
@@ -78,17 +94,18 @@ export const ProductCard = ({ product, onSelectProduct }) => {
         <img 
           src={product.image} 
           alt={product.name}
+          loading="lazy"
           style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
         />
       </div>
 
       {/* Contenido */}
       <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
-        <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
+        <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#2563eb', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
           {product.category}
         </span>
         
-        <h3 style={{ fontSize: '1rem', fontWeight: '600', color: '#1e293b', margin: '0 0 0.5rem 0', lineHeight: 1.4, minHeight: '2.8rem' }}>
+        <h3 style={{ fontSize: '0.98rem', fontWeight: '600', color: '#0f172a', margin: '0 0 0.5rem 0', lineHeight: 1.4, minHeight: '2.8rem' }}>
           {product.name}
         </h3>
 
@@ -116,10 +133,10 @@ export const ProductCard = ({ product, onSelectProduct }) => {
         {/* Precio y Acción */}
         <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '0.5rem', borderTop: '1px solid #f1f5f9' }}>
           <div>
-            <span style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#0f172a' }}>
-              ${product.price.toFixed(2)}
+            <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#0f172a' }}>
+              ${product.price.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
             </span>
-            <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block' }}>MXN</span>
+            <span style={{ fontSize: '0.72rem', color: '#64748b', display: 'block' }}>MXN</span>
           </div>
 
           <button 
@@ -127,13 +144,13 @@ export const ProductCard = ({ product, onSelectProduct }) => {
             disabled={product.stock === 0}
             className="btn-primary"
             style={{ 
-              padding: '0.5rem 0.8rem', 
-              fontSize: '0.85rem',
+              padding: '0.45rem 0.8rem', 
+              fontSize: '0.82rem',
               opacity: product.stock === 0 ? 0.5 : 1,
               cursor: product.stock === 0 ? 'not-allowed' : 'pointer'
             }}
           >
-            <ShoppingCart size={16} /> Agregar
+            <ShoppingCart size={15} /> Agregar
           </button>
         </div>
 

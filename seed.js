@@ -13,7 +13,7 @@ const firebaseConfig = {
   appId: process.env.VITE_FIREBASE_APP_ID
 };
 
-console.log("Iniciando conexión con Firebase para el proyecto:", firebaseConfig.projectId);
+console.log("Iniciando conexión con Firebase para 0x1 Tech:", firebaseConfig.projectId);
 
 if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
   console.error("Error: No se encontraron las credenciales VITE_FIREBASE_* en el archivo .env");
@@ -24,18 +24,18 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 async function seed() {
-  console.log(`Subiendo ${initialProducts.length} productos a la colección 'products' en Firestore...`);
+  console.log(`Subiendo catálogo comercial de ${initialProducts.length} productos con tags y sinónimos a Firestore...`);
   
   for (const product of initialProducts) {
     try {
-      await setDoc(doc(db, 'products', product.id), product);
-      console.log(`✓ Producto guardado: [${product.id}] ${product.name}`);
+      await setDoc(doc(db, 'products', product.id), product, { merge: true });
+      console.log(`✓ [${product.category}] ${product.name} ($${product.price} MXN)`);
     } catch (err) {
       console.error(`✗ Error al guardar ${product.id}:`, err.message);
     }
   }
 
-  console.log("\n¡Carga de productos completada exitosamente!");
+  console.log(`\n¡Carga de los ${initialProducts.length} productos completada con éxito en 0x1 Tech!`);
   process.exit(0);
 }
 

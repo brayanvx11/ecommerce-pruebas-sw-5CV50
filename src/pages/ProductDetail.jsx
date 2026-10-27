@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Star, Heart, ShoppingCart, MessageCircle, HelpCircle, Send, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { ArrowLeft, Star, Heart, ShoppingCart, MessageCircle, HelpCircle, Send, CheckCircle2, ShieldCheck, Truck } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
-export const ProductDetail = ({ product, onBack, onGoToCart, onRequireLogin }) => {
-  const { addToCart, toggleFavorite, isFavorite, addReview, addQuestion } = useStore();
+export const ProductDetail = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { products, addToCart, toggleFavorite, isFavorite, addReview, addQuestion } = useStore();
   const { isAuthenticated, currentUser } = useAuth();
+  const { addToast } = useToast();
+
+  const product = products.find(p => p.id === id);
 
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('reviews'); // 'reviews' | 'faqs'
@@ -19,22 +26,52 @@ export const ProductDetail = ({ product, onBack, onGoToCart, onRequireLogin }) =
   const [newQuestion, setNewQuestion] = useState('');
   const [questionSent, setQuestionSent] = useState(false);
 
-  if (!product) return null;
+  if (!product) {
+    return (
+      <div className="container" style={{ paddingTop: '5rem', paddingBottom: '5rem', textAlign: 'center' }}>
+        <h2 style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#0f172a' }}>Producto no encontrado</h2>
+        <p style={{ color: '#64748b', margin: '0.5rem 0 1.5rem 0' }}>El artículo solicitado no existe o fue descontinuado.</p>
+        <Link to="/catalogo" className="btn-primary" style={{ textDecoration: 'none' }}>
+          Volver al Catálogo
+        </Link>
+      </div>
+    );
+  }
 
   const favorite = isFavorite(product.id);
 
   const handleAddToCart = () => {
-    addToCart(product, quantity);
+    const added = addToCart(product, quantity);
+    if (added > 0) {
+      addToast(`${quantity}x "${product.name}" agregado(s) a tu carrito 🛒`, 'success');
+    } else {
+      addToast('No hay suficiente stock disponible.', 'error');
+    }
   };
 
   const handleBuyNow = () => {
     if (!isAuthenticated) {
-      alert('Para proceder a la compra es necesario iniciar sesión o registrarse.');
-      onRequireLogin();
+      addToast('Inicia sesión para comprar en 0x1 Tech. Los invitados pueden navegar el catálogo.', 'info');
+      navigate('/login');
       return;
     }
     addToCart(product, quantity);
-    onGoToCart();
+    addToast('Producto agregado al carrito. Redirigiendo...', 'success');
+    navigate('/carrito');
+  };
+
+  const handleToggleFav = () => {
+    if (!isAuthenticated) {
+      addToast('Inicia sesión para guardar favoritos.', 'info');
+      navigate('/login');
+      return;
+    }
+    const added = toggleFavorite(product.id);
+    if (added) {
+      addToast(`"${product.name}" guardado en Favoritos ❤️`, 'success');
+    } else {
+      addToast(`"${product.name}" eliminado de Favoritos`, 'info');
+    }
   };
 
   const handleSubmitReview = (e) => {
@@ -43,10 +80,11 @@ export const ProductDetail = ({ product, onBack, onGoToCart, onRequireLogin }) =
     addReview(product.id, {
       rating: newRating,
       comment: newComment,
-      user: currentUser ? currentUser.name : 'Usuario Verificado'
+      user: currentUser ? currentUser.name : 'Cliente 0x1 Tech'
     });
     setNewComment('');
     setReviewSent(true);
+    addToast('¡Gracias! Tu valoración ha sido publicada.', 'success');
     setTimeout(() => setReviewSent(false), 4000);
   };
 
@@ -56,30 +94,31 @@ export const ProductDetail = ({ product, onBack, onGoToCart, onRequireLogin }) =
     addQuestion(product.id, newQuestion);
     setNewQuestion('');
     setQuestionSent(true);
+    addToast('Pregunta enviada al proveedor. Recibirás respuesta pronto.', 'success');
     setTimeout(() => setQuestionSent(false), 4000);
   };
 
   return (
-    <div className="container" style={{ paddingTop: '2rem', paddingBottom: '3rem' }}>
+    <div className="container" style={{ paddingTop: '2rem', paddingBottom: '3.5rem' }}>
       
-      {/* Botón Volver */}
+      {/* Botón Volver con ruta */}
       <button 
-        onClick={onBack}
+        onClick={() => navigate(-1)}
         className="btn-secondary"
         style={{ marginBottom: '1.5rem', padding: '0.4rem 0.8rem', fontSize: '0.9rem' }}
       >
-        <ArrowLeft size={16} /> Volver al catálogo
+        <ArrowLeft size={16} /> Volver
       </button>
 
       {/* Bloque Superior: Galería y Compra */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '3rem', backgroundColor: '#ffffff', padding: '2rem', borderRadius: '1rem', border: '1px solid #e2e8f0', marginBottom: '2.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '3rem', backgroundColor: '#ffffff', padding: '2.5rem', borderRadius: '1rem', border: '1px solid #e2e8f0', marginBottom: '2.5rem' }}>
         
         {/* Imagen */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8fafc', borderRadius: '0.75rem', overflow: 'hidden', minHeight: '360px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8fafc', borderRadius: '0.75rem', overflow: 'hidden', minHeight: '380px' }}>
           <img 
             src={product.image} 
             alt={product.name} 
-            style={{ maxWidth: '100%', maxHeight: '400px', objectFit: 'contain' }}
+            style={{ maxWidth: '100%', maxHeight: '420px', objectFit: 'contain' }}
           />
         </div>
 
@@ -88,7 +127,7 @@ export const ProductDetail = ({ product, onBack, onGoToCart, onRequireLogin }) =
           <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#2563eb', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
             {product.category}
           </span>
-          <h1 style={{ fontSize: '1.8rem', fontWeight: '800', color: '#0f172a', margin: '0 0 0.8rem 0' }}>
+          <h1 style={{ fontSize: '1.85rem', fontWeight: '800', color: '#0f172a', margin: '0 0 0.8rem 0' }}>
             {product.name}
           </h1>
 
@@ -110,7 +149,7 @@ export const ProductDetail = ({ product, onBack, onGoToCart, onRequireLogin }) =
             </span>
             <span style={{ color: '#94a3b8' }}>•</span>
             <span style={{ color: '#64748b', fontSize: '0.9rem' }}>
-              {product.boughtCount || 0} compras realizadas
+              {product.boughtCount || 0} compras en 0x1 Tech
             </span>
           </div>
 
@@ -118,7 +157,7 @@ export const ProductDetail = ({ product, onBack, onGoToCart, onRequireLogin }) =
           <div style={{ marginBottom: '1.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
               <span style={{ fontSize: '2.4rem', fontWeight: '800', color: '#0f172a' }}>
-                ${product.price.toFixed(2)}
+                ${product.price.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
               </span>
               <span style={{ fontSize: '1rem', color: '#64748b' }}>MXN</span>
             </div>
@@ -140,7 +179,7 @@ export const ProductDetail = ({ product, onBack, onGoToCart, onRequireLogin }) =
             </div>
           </div>
 
-          <p style={{ color: '#475569', fontSize: '1rem', lineHeight: '1.6', marginBottom: '2rem' }}>
+          <p style={{ color: '#475569', fontSize: '0.98rem', lineHeight: '1.6', marginBottom: '1.5rem' }}>
             {product.description}
           </p>
 
@@ -178,14 +217,7 @@ export const ProductDetail = ({ product, onBack, onGoToCart, onRequireLogin }) =
                 </button>
 
                 <button 
-                  onClick={() => {
-                    if (!isAuthenticated) {
-                      alert('Debes iniciar sesión para guardar productos en favoritos.');
-                      onRequireLogin();
-                      return;
-                    }
-                    toggleFavorite(product.id);
-                  }}
+                  onClick={handleToggleFav}
                   className="btn-secondary"
                   style={{ padding: '0.8rem' }}
                   title="Marcar como Favorito"
@@ -309,13 +341,12 @@ export const ProductDetail = ({ product, onBack, onGoToCart, onRequireLogin }) =
         {activeTab === 'faqs' && (
           <div style={{ padding: '2rem' }}>
             
-            {/* Formulario para enviar duda al proveedor */}
             <div style={{ backgroundColor: '#f8fafc', padding: '1.5rem', borderRadius: '0.75rem', marginBottom: '2rem', border: '1px solid #e2e8f0' }}>
               <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', margin: '0 0 0.5rem 0', color: '#1e293b' }}>
                 ¿Tienes alguna duda sobre este producto?
               </h3>
               <p style={{ color: '#64748b', fontSize: '0.9rem', margin: '0 0 1rem 0' }}>
-                Envía tu pregunta al proveedor y el equipo de soporte te responderá directamente.
+                Envía tu pregunta al proveedor y el equipo de soporte de 0x1 Tech te responderá directamente.
               </p>
 
               {questionSent && (
