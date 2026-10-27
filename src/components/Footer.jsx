@@ -29,7 +29,7 @@ export const Footer = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             
             <a 
-              href="https://instagram.com/0x1tech_oficial" 
+              href="https://www.instagram.com/0x1tech_oficial" 
               target="_blank" 
               rel="noopener noreferrer"
               style={{ color: '#cbd5e1', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.9rem', transition: 'color 0.2s' }}
@@ -41,27 +41,27 @@ export const Footer = () => {
             </a>
 
             <a 
-              href="https://x.com/0x1tech_mx" 
+              href="https://x.com/0X1Tech_Oficia1" 
               target="_blank" 
               rel="noopener noreferrer"
               style={{ color: '#cbd5e1', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.9rem', transition: 'color 0.2s' }}
               onMouseOver={(e) => e.currentTarget.style.color = '#38bdf8'}
               onMouseOut={(e) => e.currentTarget.style.color = '#cbd5e1'}
             >
-              <span style={{ fontWeight: '600' }}>X (Twitter):</span> @0x1tech_mx
+              <span style={{ fontWeight: '600' }}>X (Twitter):</span> @0X1Tech_Oficia1
               <ExternalLink size={14} />
             </a>
 
             {/* [BUG-UI-01] Enlace institucional a TikTok */}
             <a 
-              href="https://www.tiktok.com/@0x1tech" 
+              href="https://www.tiktok.com/@0x1tech_oficial" 
               target="_blank" 
               rel="noopener noreferrer"
               style={{ color: '#cbd5e1', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.9rem', transition: 'color 0.2s' }}
               onMouseOver={(e) => e.currentTarget.style.color = '#22d3ee'}
               onMouseOut={(e) => e.currentTarget.style.color = '#cbd5e1'}
             >
-              <span style={{ fontWeight: '600' }}>TikTok:</span> @0x1tech
+              <span style={{ fontWeight: '600' }}>TikTok:</span> @0x1tech_oficial
               <ExternalLink size={14} />
             </a>
 
