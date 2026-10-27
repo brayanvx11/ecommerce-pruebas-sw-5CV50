@@ -1,13 +1,4 @@
-# Contexto del Proyecto
-
-Eres un desarrollador experto. Tu tarea es construir un E-commerce.
-El stack tecnológico que puedes elegir será:
-a) PHP (Laravel) para el backend y frontend (Blade), junto con SQLite/MySQL para la base de datos.
-
-b): Node.js (React) + Firebase (Auth y Firestore)
-
-Por favor pregúntame antes de la elección y muéstrame argumentos.
-A continuación, los requerimientos estrictos que debes programar. No agregues funcionalidades fuera de esta lista. Si se necesita un requerimiento que dependa de algo que no está explícitamente aquí, agrégalo al final de este documento.
+* Requerimientos iniciales dados por el profesor, de aquí nace el documento requerimientos_del_sistema.md
 
 ## 1\. Usuarios y Autenticación
 
