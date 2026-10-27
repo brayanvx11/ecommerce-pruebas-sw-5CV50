@@ -3,7 +3,7 @@
 **Versión del documento:** 1.1
 **Fecha:** 24 de octubre de 2026
 
-Este documento detalla las mejoras de Experiencia de Usuario (UX) propuestas para la plataforma, así como el análisis y plan de remediación derivado del Informe de Pruebas (V 1.0) ejecutado el 19 de octubre de 2026.
+Este documento detalla las mejoras de Experiencia de Usuario (UX) propuestas para la plataforma, así como el análisis y plan de remediación derivado del Informe de Pruebas (V 1.0) ejecutado el 20 de octubre de 2026.
 
 ## 1. Mejoras de Usabilidad (UX) y Estrategia de Catálogo
 
